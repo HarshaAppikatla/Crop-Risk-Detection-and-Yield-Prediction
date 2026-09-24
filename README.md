@@ -1,86 +1,91 @@
-# 🌱 Crop Risk Detection and Yield Prediction
+# 🌱 Potato Disease Detection & Risk Assessment
 
-> A deep learning–based system for crop disease detection, severity estimation, and yield loss prediction using plant leaf images.
+> A deep learning–powered pipeline for potato leaf disease classification, severity estimation, yield loss prediction, and fuzzy risk assessment.
 
 ---
 
 ## 📖 Overview
 
-Crop diseases significantly reduce agricultural productivity worldwide. This project provides an AI-powered pipeline that:
+Potato diseases like **Early Blight** and **Late Blight** cause significant yield loss globally. This project builds an end-to-end AI system that:
 
-- **Detects crop diseases** from leaf images using transfer learning
-- **Estimates disease severity** via computer vision techniques
-- **Predicts yield loss** based on detected disease severity
-- **Assists farmers** with early warning and risk assessment
+- **Classifies** potato leaf diseases using transfer learning
+- **Estimates severity** via advanced digital image processing
+- **Predicts yield loss** using agronomic coefficients and disease pressure models
+- **Assesses farm-level risk** using fuzzy logic inference
 
 ---
 
-## 🏗 Pipeline
+## 🏗 System Architecture
 
 ```mermaid
 graph TD
-    A[Leaf Image Input] --> B[Preprocessing & Augmentation]
-    B --> C[EfficientNetB0 Classification]
-    C --> D{Disease Detected?}
-    D -->|Yes| E[HSV Severity Estimation]
-    D -->|No| F[Healthy Classification]
-    E --> G[Yield Loss Calculation]
-    G --> H[Risk Report: Class + Severity + Loss %]
-    F --> H
+    A[Leaf Image] --> B[EfficientNetB0 Classifier]
+    B --> C{Disease Class}
+    C -->|Early Blight| D[Stage-Aware Yield Model]
+    C -->|Late Blight| E[Pressure-Aware Yield Model]
+    C -->|Healthy| F[Zero Loss]
+    D --> G[Fuzzy Risk Engine]
+    E --> G
+    F --> G
+    G --> H[Risk Score + Urgency Action]
 ```
 
 ---
 
 ## 🧠 Methodology
 
-### 1. Disease Classification (Transfer Learning)
-- **Base Model:** EfficientNetB0 pre-trained on ImageNet
+### 1. Disease Classification
+- **Architecture:** EfficientNetB0 (ImageNet pre-trained)
 - **Strategy:** Two-stage fine-tuning
-  - Stage 1: Freeze backbone, train classification head (lr=1e-4)
-  - Stage 2: Unfreeze top 40 layers, fine-tune (lr=1e-5)
-- **Augmentation:** Rotation, zoom, shift, brightness, shear, flip
-- **Class Balancing:** Computed class weights to handle imbalance
-- **Regularization:** Dropout (0.4), EarlyStopping, ModelCheckpoint
+  - Phase 1: Freeze backbone, train head (`lr=1e-4`, 50 epochs)
+  - Phase 2: Unfreeze top 60 layers, fine-tune (`lr=1e-5`, 15 epochs)
+- **Augmentation:** Flip, brightness, contrast, rotation
+- **Regularization:** BatchNorm, Dropout (0.3), EarlyStopping, ReduceLROnPlateau
+- **Class Balancing:** `compute_class_weight="balanced"`
 
-### 2. Severity Estimation (Computer Vision)
-- **Technique:** HSV color space analysis
-- **Method:** 
-  - Isolate leaf region using green HSV mask
-  - Detect disease spots (yellow/brown) within leaf mask
-  - Calculate infection ratio: `(disease pixels / leaf pixels) × 100`
-- **Severity Levels:**
-  - `< 10%` — Mild
-  - `10-30%` — Moderate
-  - `30-60%` — Severe
-  - `> 60%` — Critical
+### 2. Severity Estimation (DIP Pipeline)
+- **Leaf Segmentation:** Multi-range HSV masking (green, yellow-green, brown, red-brown, dark green) + Canny edge refinement
+- **Lesion Detection:** 6 targeted HSV ranges for necrotic/dried tissue
+- **Post-processing:** Connected component filtering, hole filling, morphological closing
+- **Output:** `severity_pct = (lesion_pixels / leaf_pixels) × 100`
 
 ### 3. Yield Loss Prediction
-- **Approach:** Heuristic crop-specific factors multiplied by severity
-- **Crop Factors:** Tomato (0.45), Potato (0.55), Pepper (0.40)
-- **Formula:** `Yield Loss (%) = Severity (%) × Crop Factor`
+- **Disease-specific coefficients** based on crop growth stage:
+  - Early Blight: 0.19–0.32 pp loss per 1% severity
+  - Late Blight: 0.50–0.70 pp loss per 1% severity
+- **Disease pressure multipliers:** Low (0.75), Normal (1.0), Favorable (1.15), Epidemic (1.35)
+- **Loss caps:** Prevents unrealistic estimates (e.g., Late Blight capped at 50–100%)
+
+### 4. Fuzzy Risk Assessment
+- **Framework:** `scikit-fuzzy` Mamdani system
+- **Inputs:** Severity (%), Yield Loss (%)
+- **Outputs:** Risk Score (0–100), Urgency Level
+- **Rules:** 10 fuzzy rules mapping disease impact to action urgency
+- **Urgency levels:** Monitor Weekly → Apply Fungicide Soon → Act Within 48 Hours → Immediate Action
 
 ---
 
 ## 📊 Dataset
 
-| Crop | Source | Classes |
-|------|--------|---------|
-| Pepper | PlantVillage | Healthy, Bacterial Spot, etc. |
-| Potato | PlantVillage | Healthy, Early Blight, Late Blight |
-| Tomato | PlantVillage | Healthy, Bacterial Spot, Late Blight, etc. |
-
-**Split:** 80% Training / 20% Validation (stratified by disease class)
+| Attribute | Details |
+|:----------|:--------|
+| **Crop** | 🥔 Potato |
+| **Source** | PlantVillage Dataset |
+| **Classes** | Early Blight, Late Blight, Healthy |
+| **Split** | 64% Train / 16% Validation / 20% Test (stratified) |
+| **Preprocessing** | Resize to 224×224, EfficientNet normalization |
 
 ---
 
 ## 🛠 Tech Stack
 
 | Category | Tools |
-|----------|-------|
+|:---------|:------|
 | **Language** | Python 3.x |
-| **Deep Learning** | TensorFlow / Keras |
-| **Computer Vision** | OpenCV |
-| **Data Processing** | NumPy, Scikit-learn |
+| **Deep Learning** | TensorFlow / Keras, EfficientNetB0 |
+| **Computer Vision** | OpenCV (HSV, Canny, Morphology) |
+| **Fuzzy Logic** | scikit-fuzzy |
+| **Data Processing** | NumPy, Pandas, Scikit-learn |
 | **Visualization** | Matplotlib, Seaborn |
 | **Environment** | Google Colab / Jupyter |
 
@@ -89,19 +94,22 @@ graph TD
 ## 📂 Project Structure
 
 ```
-crop-risk-detection/
+potato-disease-risk/
 ├── data/
-│   ├── Pepper.zip
-│   ├── Potato.zip
-│   └── Tomato.zip
-├── models/
-│   └── crop_disease_model.keras
+│   └── Potato.zip
 ├── notebooks/
-│   └── crop_risk_detection_and_yield_prediction.ipynb
+│   └── potato_disease_22nd_april.ipynb
+├── models/
+│   ├── best_potato_disease_cnn.keras
+│   ├── best_potato_disease_cnn_finetuned.keras
+│   ├── potato_disease_cnn_final.keras
+│   └── potato_class_names.json
 ├── results/
-│   ├── accuracy_plot.png
+│   ├── batch_severity_results.csv
+│   ├── batch_risk_results.csv
+│   ├── training_curves.png
 │   ├── confusion_matrix.png
-│   └── classification_report.txt
+│   └── sample_predictions.png
 ├── requirements.txt
 └── README.md
 ```
@@ -120,35 +128,38 @@ pip install -r requirements.txt
 tensorflow>=2.10
 opencv-python
 scikit-learn
+scikit-fuzzy
 numpy
+pandas
 matplotlib
 seaborn
 pillow
 ```
 
-### Training
+### Training Pipeline
 ```python
-# Mount Drive (Colab) or set local paths
-from google.colab import drive
-drive.mount('/content/drive')
-
-# Run notebook cells sequentially:
-# 1. Extract datasets
-# 2. Train/validation split
-# 3. Train model (transfer learning)
-# 4. Fine-tune model
-# 5. Evaluate & save
+# 1. Mount Drive (Colab) or set local paths
+# 2. Extract and validate dataset
+# 3. Build stratified train/val/test splits
+# 4. Stage 1: Train classification head
+# 5. Stage 2: Fine-tune top 60 layers
+# 6. Evaluate on held-out test set
+# 7. Run batch severity + risk assessment
 ```
 
 ### Inference
 ```python
-from tensorflow.keras.preprocessing import image
-import numpy as np
+result = predict_disease_and_severity(
+    "leaf.jpg",
+    crop_stage="late_bulking_maturation",
+    disease_pressure="favorable",
+    expected_yield_t_ha=25.0
+)
 
-img = image.load_img("leaf.jpg", target_size=(224, 224))
-img_array = preprocess_input(np.expand_dims(image.img_to_array(img), axis=0))
-prediction = model.predict(img_array)
-class_name = class_names[np.argmax(prediction)]
+print(f"Disease: {result['disease']}")
+print(f"Severity: {result['severity_pct']}%")
+print(f"Yield Loss: {result['yield_loss_pct']}%")
+print(f"Risk Score: {result['risk_score']}/100 — {result['urgency']}")
 ```
 
 ---
@@ -156,35 +167,35 @@ class_name = class_names[np.argmax(prediction)]
 ## 📈 Results
 
 | Metric | Value |
-|--------|-------|
-| Input Resolution | 224×224 |
-| Batch Size | 32 |
-| Optimizer | Adam (lr=1e-4 → 1e-5) |
-| Loss Function | Categorical Crossentropy |
-| Validation Strategy | 20% holdout |
+|:-------|:------|
+| **Input Resolution** | 224×224 |
+| **Batch Size** | 32 |
+| **Optimizer** | Adam (`1e-4` → `1e-5`) |
+| **Validation Strategy** | Stratified 80/20 holdout |
+| **Class Weights** | Balanced sampling |
+| **Reproducibility** | `SEED=42` (Python, NumPy, TensorFlow) |
 
-> Detailed accuracy/loss curves and confusion matrix available in `/results/`
+> Evaluation includes per-class precision/recall/F1, confusion matrix, and sample predictions with confidence scores.
 
 ---
 
 ## 💡 Applications
 
-- **Precision Agriculture:** Targeted pesticide application
-- **Smart Farming:** Automated crop health monitoring
-- **Early Warning Systems:** Disease outbreak detection
-- **Decision Support:** Yield loss forecasting for insurance/finance
+- **Precision Agriculture:** Targeted fungicide application based on disease stage
+- **Smart Farming:** Automated field scouting and early warning systems
+- **Decision Support:** Risk scores guide farm management actions
+- **Insurance & Finance:** Objective yield loss estimation for claims
 
 ---
 
 ## 🔮 Future Improvements
 
-- [ ] Integrate U-Net / DeepLabV3+ for leaf segmentation
-- [ ] Replace heuristic severity with learned regression model
-- [ ] Deploy as FastAPI / Flask web service
-- [ ] Mobile app with TensorFlow Lite
-- [ ] Expand to 20+ crop varieties
-- [ ] Add Grad-CAM explainability for disease localization
-- [ ] Incorporate weather/soil data for yield prediction
+- [ ] Multi-crop support (Pepper, Tomato)
+- [ ] Replace heuristic DIP with U-Net segmentation
+- [ ] Time-series severity tracking (AUDPC) for better yield models
+- [ ] Deploy as REST API (FastAPI) or mobile app
+- [ ] Integrate weather/soil IoT data
+- [ ] Grad-CAM explainability for disease localization
 
 ---
 
@@ -199,4 +210,4 @@ class_name = class_names[np.argmax(prediction)]
 
 ## 📜 License
 
-MIT License — feel free to use and modify for research or commercial purposes.
+MIT License — free for research and commercial use.
