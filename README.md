@@ -186,7 +186,7 @@ Stratified split (`SEED=42`): 80% train+val / 20% test, then 20% of train+val he
 
 ## 📈 Results
 
-### Classification (held-out test set, 431 images)
+### Classification Performance (held-out test set, 431 images)
 
 **Accuracy: 98.8% (426 / 431 correct) · Macro F1: 0.98**
 
@@ -196,13 +196,31 @@ Stratified split (`SEED=42`): 80% train+val / 20% test, then 20% of train+val he
 | Late Blight | 0.99 | 0.99 | 0.99 | 200 |
 | Healthy | 0.94 | 1.00 | 0.97 | 31 |
 
-Only 5 mistakes: 3 Early Blight predicted as Late Blight, and 2 Late Blight predicted as Healthy.
+**Error analysis:** Only 5 mistakes — 3 Early Blight predicted as Late Blight, and 2 Late Blight predicted as Healthy.
 
-| Training curves | Confusion matrix |
-|:--:|:--:|
-| ![Training curves](results/training_curves.png) | ![Confusion matrix](results/confusion_matrix.png) |
+---
+
+### Training Curves
+
+![Training curves](results/training_curves.png)
+
+*Accuracy and loss curves for Phase 1 (frozen backbone) and Phase 2 (fine-tuning top 60 layers). The dashed line marks the start of fine-tuning.*
+
+---
+
+### Confusion Matrix
+
+![Confusion matrix](results/confusion_matrix.png)
+
+*Held-out test confusion matrix showing near-perfect separation between Early Blight, Late Blight, and Healthy leaves.*
+
+---
+
+### Sample Predictions
 
 ![Sample predictions](results/sample_predictions.png)
+
+*Random test samples with actual vs. predicted class and model confidence. Correct predictions in green, errors in red.*
 
 ### End-to-end examples
 Each panel shows: original → Canny edges → leaf mask → lesion mask → overlay with severity, yield loss and risk.
@@ -240,12 +258,21 @@ Run with crop stage = unknown, pressure = normal, and the **true** class label (
 | 🟡 Apply Fungicide Soon | 178 |
 | 🟠 Act Within 48 Hours | 73 |
 | 🔴 Immediate Action Required | 73 |
-
-| Severity boxplots | Risk distribution |
-|:--:|:--:|
-| ![Severity boxplots](results/severity_boxplots.png) | ![Risk distribution](results/risk_distribution.png) |
-
 ---
+
+### Visualizations
+
+#### Severity & Yield Loss Distributions
+
+![Severity boxplots](results/severity_boxplots.png)
+
+*Boxplots showing estimated severity and yield loss by disease class on the held-out test set.*
+
+#### Risk Score Distribution
+
+![Risk distribution](results/risk_distribution.png)
+
+*Risk score distribution by class (left) and urgency label distribution across all test samples (right).*
 
 ## 🛠 Tech Stack
 
